@@ -1,0 +1,8 @@
+{
+  "name": "redevi-blockchain",
+  "version": "1.0.0",
+  "description": "Wireless Solution Redevi Blockchain",
+  "dependencies": {
+    "hardhat": "^2.22.0"
+  }
+}
