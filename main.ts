@@ -1,18 +1,14 @@
-// REDEVI Blockchain Server - Deno Compatible
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-
-const PORT = parseInt(Deno.env.get("PORT") || "8000");
+// REDEVI Blockchain Server - Deno Deploy Fixed Version
 
 // Accounts (Test Wallets)
 const accounts: Record<string, number> = {
-  "0x8Dc7dF6a8D7CAE52a590a2dDf75e9Be38D4453": 1000000000,
-  "0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb": 0,
-  "0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db": 0,
+  "0x8dc7df6a8d7cae52a590a2ddf75e9be38d4453": 1000000000,
+  "0xab8483f64d9c6d1ecf9b849ae677dd3315835cb": 0,
+  "0x4b20993bc481177ec7e8f571cecae8a9e22c02db": 0,
 };
 
-// Transactions List
-const transactions: object[] = [];
 let blockNumber = 1;
+const transactions: object[] = [];
 
 // RPC Handler
 async function handleRPC(req: Request): Promise<Response> {
@@ -24,7 +20,7 @@ async function handleRPC(req: Request): Promise<Response> {
   };
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers });
+    return new Response(null, { status: 200, headers });
   }
 
   if (req.method === "GET") {
@@ -35,7 +31,6 @@ async function handleRPC(req: Request): Promise<Response> {
         chainId: 9983,
         blockNumber: blockNumber,
         status: "✅ Online",
-        rpcUrl: "https://redevi-blockchain.deno.dev",
       }),
       { headers }
     );
@@ -44,12 +39,11 @@ async function handleRPC(req: Request): Promise<Response> {
   try {
     const body = await req.json();
     const { method, params, id } = body;
-
     let result: unknown = null;
 
     switch (method) {
       case "eth_chainId":
-        result = "0x26FF"; // 9983 in hex
+        result = "0x26FF";
         break;
 
       case "net_version":
@@ -60,11 +54,12 @@ async function handleRPC(req: Request): Promise<Response> {
         result = `0x${blockNumber.toString(16)}`;
         break;
 
-      case "eth_getBalance":
+      case "eth_getBalance": {
         const addr = params[0]?.toLowerCase();
-        const balance = accounts[addr] || 0;
-        result = `0x${(balance * 1e18).toString(16)}`;
+        const bal = accounts[addr] || 0;
+        result = `0x${BigInt(Math.floor(bal * 1e18)).toString(16)}`;
         break;
+      }
 
       case "eth_accounts":
         result = Object.keys(accounts);
@@ -80,8 +75,7 @@ async function handleRPC(req: Request): Promise<Response> {
           accounts[from] -= value;
           accounts[to] = (accounts[to] || 0) + value;
           blockNumber++;
-
-          const txHash = `0x${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`;
+          const txHash = `0x${crypto.randomUUID().replace(/-/g, "")}`;
           transactions.push({ hash: txHash, from, to, value });
           result = txHash;
         } else {
@@ -109,6 +103,10 @@ async function handleRPC(req: Request): Promise<Response> {
         result = "0x5208";
         break;
 
+      case "eth_getTransactionReceipt":
+        result = null;
+        break;
+
       default:
         result = null;
     }
@@ -117,7 +115,7 @@ async function handleRPC(req: Request): Promise<Response> {
       JSON.stringify({ jsonrpc: "2.0", id, result }),
       { headers }
     );
-  } catch (e) {
+  } catch (_e) {
     return new Response(
       JSON.stringify({
         jsonrpc: "2.0",
@@ -128,20 +126,9 @@ async function handleRPC(req: Request): Promise<Response> {
   }
 }
 
-console.log(`
-╔═══════════════════════════════════════╗
-║     REDEVI Blockchain Network         ║
-╠═══════════════════════════════════════╣
-║  ✅ Server Chal Raha Hai!             ║
-║  🌐 Chain ID:  9983                   ║
-║  💰 Symbol:    REDEVI                 ║
-║  📡 Port:      ${PORT}                    ║
-╚═══════════════════════════════════════╝
+console.log("✅ REDEVI Blockchain Server Chal Raha Hai!");
+console.log("🔗 Chain ID: 9983");
+console.log("💰 Symbol: REDEVI");
 
-MetaMask Mein Add Karo:
-- Network Name: REDEVI Network  
-- Chain ID: 9983
-- Symbol: REDEVI
-`);
-
-serve(handleRPC, { port: PORT });
+// ✅ FIXED: Deno.serve() use karo - localhost nahi!
+Deno.serve(handleRPC);
